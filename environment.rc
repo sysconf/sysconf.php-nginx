@@ -1,0 +1,4 @@
+# Environment (config) for sysconf.sugarcrm  -*- shell-script -*-
+
+# To customize in ../actual/environment.rc
+SYSCONF_SUGARCRM_MYSQL_PASSWORD=Ileng3nujohVoo6D

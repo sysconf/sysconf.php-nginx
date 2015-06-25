@@ -1,0 +1,66 @@
+# Installer script for sysconf.sugarcrm  -*- shell-script -*-
+
+. /usr/lib/sysconf.base/common.sh
+
+
+# Install required Debian packages
+_packages=
+_packages="$_packages rsyslog"
+_packages="$_packages inetutils-ping nano"
+_packages="$_packages mysql-client"
+_packages="$_packages nginx mysql-server php5-fpm php5-mysql"
+_packages="$_packages unzip"
+
+sysconf_require_packages $_packages
+
+# Fix Nginx
+_force_nginx_restart=no
+if [ -r /etc/nginx/sites-enabled/default ]; then
+    rm -f /etc/nginx/sites-enabled/default
+    _force_nginx_restart=yes
+fi
+if ps x | grep nginx | grep -vq grep; then
+    if [ $_force_nginx_restart = yes ]; then
+        service nginx restart
+    fi
+else
+    service nginx start
+fi
+
+# Fix php-fpm
+_force_fpm_restart=no
+if [ -r /etc/php5/fpm/pool.d/www.conf ]; then
+    rm -f /etc/php5/fpm/pool.d/www.conf
+    _force_fpm_restart=yes
+fi
+if ps x | grep php-fpm | grep -vq grep; then
+    if [ $_force_fpm_restart = yes ]; then
+        service php5-fpm restart
+    fi
+else
+    service php5-fpm start
+fi
+
+usermod -s /bin/bash www-data
+sysconf-etc.d update -v www-data.ssh_authorized_keys
+
+mysql_run() {
+    echo "MySQL query: $1" >&2
+    echo "$1" >&2
+    echo "$1" | mysql
+    local _status=${PIPESTATUS[1]}
+    if [ $_status -ne 0 ]; then
+        nef_fatal "MySQL query failed with status $_status"
+    fi
+}
+
+# Create MySQL database and user for sugarcrm
+mysql_run "CREATE DATABASE IF NOT EXISTS sugarcrm"
+_count=$(mysql_run "SELECT User FROM mysql.user WHERE User = 'sugarcrm'" | grep ^sugarcrm | wc -l)
+if [ $_count -eq 0 ]; then
+    nef_log "Fixing MySQL user: sugarcrm"
+    mysql_run "CREATE USER 'sugarcrm'@'%' IDENTIFIED BY 'sugarcrm'"
+    mysql_run "GRANT ALL PRIVILEGES ON sugarcrm.* TO 'sugarcrm' "
+    mysql_run "FLUSH PRIVILEGES"
+    mysql_run "SET PASSWORD FOR 'sugarcrm'@'%' = PASSWORD('${SYSCONF_SUGARCRM_MYSQL_PASSWORD}');"
+fi
