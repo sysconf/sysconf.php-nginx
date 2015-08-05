@@ -8,6 +8,7 @@ _packages=
 _packages="$_packages rsyslog"
 _packages="$_packages inetutils-ping"
 _packages="$_packages nginx php5-fpm"
+_packages="$_packages php5-mysql"
 _packages="$_packages unzip"
 
 sysconf_require_packages $_packages
