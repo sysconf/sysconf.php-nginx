@@ -11,6 +11,11 @@ _packages="$_packages nginx php5-fpm"
 _packages="$_packages php5-mysql"
 _packages="$_packages unzip"
 
+# Postfix to send mails
+_packages="$_packages bind9-host"
+_packages="$_packages postfix procmail"
+_packages="$_packages heirloom-mailx"
+
 sysconf_require_packages $_packages
 
 # Fix Nginx
